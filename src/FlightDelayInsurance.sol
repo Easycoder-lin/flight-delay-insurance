@@ -10,31 +10,43 @@ contract FlightDelayInsurance {
     address public oracle;
 
     /// @notice Standard statuses for an insurance
-    enum Status { Active, Terminated, Claimed }
+    enum Status {
+        Active,
+        Terminated,
+        Claimed
+    }
     /// @notice Claim outcome
-    enum ClaimStatus { None, Paid, Denied }
+    enum ClaimStatus {
+        None,
+        Paid,
+        Denied
+    }
     /// @notice Flight state
-    enum FlightStatus { Normal, Canceled, Other }
+    enum FlightStatus {
+        Normal,
+        Canceled,
+        Other
+    }
 
     struct Insurance {
-        address payable customer;    // wallet
-        string flightCode;           // ex. "CI123"
-        uint256 T1;                  // scheduled departure (UNIX)
-        uint256 TP;                  // scheduled arrival (UNIX)
-        uint256 TA;                  // actual arrival (UNIX), 0 if unknown
-        uint256 T;                   // last check timestamp
-        uint256 CT;                  // delay threshold (seconds)
-        uint256 premium;             // paid in smallest unit
-        uint256 claimAmount;         // payout amount
+        address payable customer; // wallet
+        string flightCode; // ex. "CI123"
+        uint256 T1; // scheduled departure (UNIX)
+        uint256 TP; // scheduled arrival (UNIX)
+        uint256 TA; // actual arrival (UNIX), 0 if unknown
+        uint256 T; // last check timestamp
+        uint256 CT; // delay threshold (seconds)
+        uint256 premium; // paid in smallest unit
+        uint256 claimAmount; // payout amount
         Status status;
         ClaimStatus claimStatus;
         FlightStatus flightStatus;
     }
 
     /// @dev Base values (in smallest unit)
-    uint256 public constant DEFAULT_CT = 4 hours;      // 14400 seconds
-    uint256 public constant DEFAULT_PREMIUM = 3e16 wei;     // e.g. 0.3 ether 先改小一點0.03測試 
-    uint256 public constant DEFAULT_CLAIM = 6e16 wei;      // e.g. 6 ether 先改小一點0.06測試
+    uint256 public constant DEFAULT_CT = 4 hours; // 14400 seconds
+    uint256 public constant DEFAULT_PREMIUM = 3e16 wei; // e.g. 0.3 ether 先改小一點0.03測試
+    uint256 public constant DEFAULT_CLAIM = 6e16 wei; // e.g. 6 ether 先改小一點0.06測試
 
     uint256 private nextInsuranceId = 0;
     mapping(uint256 => Insurance) public insurances;
@@ -55,10 +67,12 @@ contract FlightDelayInsurance {
         require(msg.sender == owner, "Owner only");
         _;
     }
+
     modifier onlyOracle() {
         require(msg.sender == oracle, "Oracle only");
         _;
     }
+
     modifier onlyOracleOrOwner() {
         require(msg.sender == oracle || msg.sender == owner, "Not authorized");
         _;
@@ -79,11 +93,7 @@ contract FlightDelayInsurance {
     /// @param T1 Scheduled departure (UNIX timestamp)
     /// @param TP Scheduled arrival (UNIX timestamp)
     /// @return insuranceID The ID assigned
-    function createInsurance(
-        string calldata flightCode,
-        uint256 T1,
-        uint256 TP
-    )
+    function createInsurance(string calldata flightCode, uint256 T1, uint256 TP)
         external
         payable
         returns (uint256 insuranceID)
@@ -111,14 +121,7 @@ contract FlightDelayInsurance {
     }
 
     /// @notice Update actual arrival and flight status (via oracle)
-    function updateFlightInfo(
-        uint256 insuranceID,
-        uint256 TA,
-        FlightStatus flightStatus
-    )
-        external
-        onlyOracleOrOwner
-    {
+    function updateFlightInfo(uint256 insuranceID, uint256 TA, FlightStatus flightStatus) external onlyOracleOrOwner {
         Insurance storage ins = insurances[insuranceID];
         require(ins.status == Status.Active, "Insurance not active");
 
@@ -128,7 +131,7 @@ contract FlightDelayInsurance {
     }
 
     /// @notice Check conditions and optionally pay out
-    function checkAndClaim(uint256 insuranceID) external payable onlyOwner{
+    function checkAndClaim(uint256 insuranceID) external payable onlyOwner {
         Insurance storage ins = insurances[insuranceID];
         require(ins.status == Status.Active, "Insurance not active");
 
@@ -181,11 +184,7 @@ contract FlightDelayInsurance {
     /* ========== VIEW HELPERS ========== */
 
     /// @notice Get list of insurance IDs for a customer
-    function getInsurancesByCustomer(address customer)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function getInsurancesByCustomer(address customer) external view returns (uint256[] memory) {
         return customerInsurances[customer];
     }
 
@@ -194,7 +193,7 @@ contract FlightDelayInsurance {
     fallback() external payable {}
 
     // withdraw smart contract balance
-    function withdraw() external payable onlyOwner{
+    function withdraw() external payable onlyOwner {
         (bool withdrawSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
         require(withdrawSuccess, "Withdraw Failed !");
     }
